@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'package:gtodo/login.dart'; // Import the login page for navigation
 import 'package:gtodo/profile.dart'; // Import the profile page for navigation
 
 class HomePage extends StatelessWidget {
   final List<String> tasks = []; // Sample list of tasks
+  final TextEditingController _taskController =
+      TextEditingController(); // Controller for the TextField
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance; // Firestore instance
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +29,7 @@ class HomePage extends StatelessWidget {
                 // Handle logout logic here
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          LoginPage()), // Navigate back to the login page
+                  MaterialPageRoute(builder: (context) => LoginPage()),
                 );
               }
             },
@@ -71,22 +74,32 @@ class HomePage extends StatelessWidget {
               ),
             ),
             TextField(
+              controller: _taskController,
               decoration: InputDecoration(
                 labelText: 'Add a new task',
                 border: OutlineInputBorder(),
               ),
-              onSubmitted: (value) {
-                if (value.isNotEmpty) {
-                  // Add new task
-                  tasks.add(value);
-                  // Note: You would typically use setState or state management here to refresh the UI
-                }
-              },
             ),
             SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () {
-                // You can add more logic here if needed
+              onPressed: () async {
+                final taskDescription = _taskController.text;
+                if (taskDescription.isNotEmpty) {
+                  // Generate a unique ID (you can use the document ID from Firestore)
+                  String taskId = _firestore.collection('tasks').doc().id;
+
+                  // Add task to Firestore
+                  await _firestore.collection('tasks').doc(taskId).set({
+                    'createdAt': FieldValue
+                        .serverTimestamp(), // Automatically sets the timestamp
+                    'description': taskDescription,
+                    'id': taskId,
+                    'isDone': false,
+                  });
+
+                  // Clear the TextField
+                  _taskController.clear();
+                }
               },
               child: Text('Add Task'),
             ),
