@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
-import 'package:gtodo/home.dart'; // Adjust based on your project structure
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gtodo/home.dart';
 
 class LoginPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
@@ -11,7 +11,6 @@ class LoginPage extends StatelessWidget {
     String password = passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      // Show an error if inputs are invalid
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -35,7 +34,6 @@ class LoginPage extends StatelessWidget {
         password: password,
       );
 
-      // Navigate to HomePage upon successful login
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
@@ -85,21 +83,27 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900], // Solid dark background
+      backgroundColor: Colors.grey[900],
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              CircleAvatar(
+                radius: 50,
+                backgroundImage: AssetImage('assets/th.jpg'), // Replace with the correct asset path
+              ),
+              SizedBox(height: 20.0),
               TextField(
                 controller: emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0), // Rounded edges
+                  ),
                   filled: true,
-                  fillColor:
-                      const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.8),
+                  fillColor: const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.3), // Adjust transparency
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -108,9 +112,11 @@ class LoginPage extends StatelessWidget {
                 controller: passwordController,
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0), // Rounded edges
+                  ),
                   filled: true,
-                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.8),
+                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.3), // Adjust transparency
                 ),
                 obscureText: true,
               ),
@@ -119,16 +125,13 @@ class LoginPage extends StatelessWidget {
                 onPressed: () => _login(context),
                 child: Text('Login'),
                 style: ElevatedButton.styleFrom(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
+                  padding: EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
                 ),
               ),
               SizedBox(height: 16.0),
               TextButton(
                 onPressed: () {
-                  // Navigate to signup page
                   print('Navigate to signup page');
-                  // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => SignupPage()));
                 },
                 child: Text(
                   'Don\'t have an account? Sign up',
