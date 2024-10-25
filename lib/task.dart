@@ -168,7 +168,7 @@ class _TaskPageState extends State<TaskPage> {
 
           // Update user points based on priority
           String userId = _auth.currentUser!.uid; // Get current user's ID
-          int pointsToAdd = priority * 10; // Assign points based on priority
+          int pointsToAdd = priority * 1; // Assign points based on priority
           await _firestore.collection('users').doc(userId).update({
             'points': FieldValue.increment(pointsToAdd),
             'completed': FieldValue.increment(1),
@@ -270,18 +270,30 @@ class _TaskPageState extends State<TaskPage> {
                         title: Text(
                           task['description'],
                           style: TextStyle(
-                            color: task['isDone'] ? Colors.white : (task['isSkipped'] ? Colors.red : Colors.white),
-                            decoration: task['isDone'] ? TextDecoration.lineThrough : TextDecoration.none,
+                            color: task['isDone']
+                                ? Colors.white
+                                : (task['isSkipped']
+                                    ? Colors.red
+                                    : Colors.white),
+                            decoration: task['isDone']
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
                           ),
                         ),
                         subtitle: Text(
                           'Priority: ${task['priority']}',
                           style: TextStyle(
-                            color: task['isDone'] ? Colors.white : (task['isSkipped'] ? Colors.red : Colors.white),
-                            decoration: task['isDone'] ? TextDecoration.lineThrough : TextDecoration.none,
+                            color: task['isDone']
+                                ? Colors.white
+                                : (task['isSkipped']
+                                    ? Colors.red
+                                    : Colors.white),
+                            decoration: task['isDone']
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
                           ),
                         ),
-                        trailing: task['isDone'] 
+                        trailing: task['isDone']
                             ? null // Remove trailing buttons if the task is done
                             : Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -290,7 +302,8 @@ class _TaskPageState extends State<TaskPage> {
                                     IconButton(
                                       icon: Icon(Icons.check),
                                       onPressed: () {
-                                        _completeTask(task.id, task['taskId'], task['priority']);
+                                        _completeTask(task.id, task['taskId'],
+                                            task['priority']);
                                       },
                                     ),
                                   ],

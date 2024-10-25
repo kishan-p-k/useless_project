@@ -1,4 +1,3 @@
-// profile.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -23,9 +22,9 @@ class ProfilePage extends StatelessWidget {
           );
         }
 
-        Map<String, dynamic> userData = 
+        Map<String, dynamic> userData =
             snapshot.data!.data() as Map<String, dynamic>;
-        
+
         return Scaffold(
           backgroundColor: Colors.grey[900],
           appBar: AppBar(
@@ -45,7 +44,7 @@ class ProfilePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildAvatarSection(userData),
+                _buildAvatarSection(userData, context), // Pass context
                 const SizedBox(height: 20),
                 _buildTaskSummary(userData),
                 const SizedBox(height: 20),
@@ -71,7 +70,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatarSection(Map<String, dynamic> userData) {
+  Widget _buildAvatarSection(Map<String, dynamic> userData, BuildContext context) {
     return Row(
       children: [
         Container(
@@ -97,7 +96,13 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                // Navigate to home page when the button is pressed
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
                 shape: RoundedRectangleBorder(
@@ -147,7 +152,7 @@ class ProfilePage extends StatelessWidget {
 
   Widget _buildRecentActivities(Map<String, dynamic> userData) {
     List<dynamic> activities = userData['recentActivities'] ?? [];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
