@@ -10,7 +10,6 @@ class LoginPage extends StatelessWidget {
     String password = passwordController.text;
 
     if (phone.isEmpty || password.isEmpty) {
-      // Show an error if inputs are invalid
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -27,16 +26,12 @@ class LoginPage extends StatelessWidget {
       return;
     }
 
-    // Validate phone number and password
     if (phone == '123' && password == '123') {
-      // Successful login
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-            builder: (context) => HomePage()), // Navigate to ProfilePage
+        MaterialPageRoute(builder: (context) => HomePage()),
       );
     } else {
-      // Show an error for invalid credentials
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -56,41 +51,54 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900], // Solid dark background
+      backgroundColor: Colors.grey[900],
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              // Circular avatar for user image
+              CircleAvatar(
+                radius: 50, // Adjust size as needed
+                backgroundImage: AssetImage('assets/th.jpg'), // Use asset image
+              ),
+              SizedBox(height: 20.0),
               TextField(
                 controller: phoneController,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
+                  labelStyle: TextStyle(color: Colors.white70),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0), // Rounded corners
+                  ),
                   filled: true,
-                  fillColor:
-                      const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.8),
+                  fillColor: Colors.white.withOpacity(0.2),
                 ),
                 keyboardType: TextInputType.phone,
               ),
               SizedBox(height: 16.0),
               TextField(
                 controller: passwordController,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
+                  labelStyle: TextStyle(color: Colors.white70),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0), // Rounded corners
+                  ),
                   filled: true,
-                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.8),
+                  fillColor: Colors.white.withOpacity(0.2),
                 ),
+                obscureText: true,
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
                 onPressed: () => _login(context),
                 child: Text('Login'),
                 style: ElevatedButton.styleFrom(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
+                  padding: EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
                 ),
               ),
               SizedBox(height: 16.0),
@@ -98,7 +106,6 @@ class LoginPage extends StatelessWidget {
                 onPressed: () {
                   // Navigate to signup page
                   print('Navigate to signup page');
-                  // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => SignupPage()));
                 },
                 child: Text(
                   'Don\'t have an account? Sign up',
