@@ -38,7 +38,7 @@ class LoginPage extends StatelessWidget {
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/th.jpg'), // Background image
-            fit: BoxFit.cover,
+            fit: BoxFit.fill,
           ),
         ),
         child: Padding(
@@ -52,7 +52,8 @@ class LoginPage extends StatelessWidget {
                   labelText: 'Phone Number',
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.8),
+                  fillColor:
+                      const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.8),
                 ),
                 keyboardType: TextInputType.phone,
               ),
@@ -63,7 +64,7 @@ class LoginPage extends StatelessWidget {
                   labelText: 'Password',
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.8),
+                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.8),
                 ),
                 obscureText: true,
               ),
