@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1047909571294",
+    "project_id": "gtodo-d7d62",
+    "storage_bucket": "gtodo-d7d62.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1047909571294:android:054c0f8bfac4985b72004f",
+        "android_client_info": {
+          "package_name": "com.example.todo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAl50KrPY3up5v-IB317n0jdz2bSh_R748"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

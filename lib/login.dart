@@ -14,7 +14,7 @@ class LoginPage extends StatelessWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: Text("Error"),
-          content: Text("Please enter both phone number and password."),
+          content: Text("Please enter both email and password."),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -76,7 +76,7 @@ class LoginPage extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white.withOpacity(0.2),
                 ),
-                keyboardType: TextInputType.phone,
+                keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16.0),
               TextField(
@@ -91,6 +91,7 @@ class LoginPage extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white.withOpacity(0.2),
                 ),
+                obscureText: true,
                 obscureText: true,
               ),
               SizedBox(height: 16.0),
