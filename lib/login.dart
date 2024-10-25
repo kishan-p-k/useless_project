@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gtodo/profile.dart'; // Import the profile page for navigation
 
 class LoginPage extends StatelessWidget {
   final TextEditingController phoneController = TextEditingController();
@@ -26,21 +27,37 @@ class LoginPage extends StatelessWidget {
       return;
     }
 
-    // Add your login logic here (e.g., API call)
-    print('Phone: $phone, Password: $password');
-    // Navigate to home page or show success message
+    // Validate phone number and password
+    if (phone == '123' && password == '123') {
+      // Successful login
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => ProfilePage()), // Navigate to ProfilePage
+      );
+    } else {
+      // Show an error for invalid credentials
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Login Failed"),
+          content: Text("Invalid phone number or password."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/th.jpg'), // Background image
-            fit: BoxFit.fill,
-          ),
-        ),
+      backgroundColor: Colors.grey[900], // Solid dark background
+      body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -66,7 +83,6 @@ class LoginPage extends StatelessWidget {
                   filled: true,
                   fillColor: const Color(0xFFFDFDFD).withOpacity(0.8),
                 ),
-                obscureText: true,
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
@@ -84,7 +100,10 @@ class LoginPage extends StatelessWidget {
                   print('Navigate to signup page');
                   // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => SignupPage()));
                 },
-                child: Text('Don\'t have an account? Sign up'),
+                child: Text(
+                  'Don\'t have an account? Sign up',
+                  style: TextStyle(color: Colors.blueAccent),
+                ),
               ),
             ],
           ),
