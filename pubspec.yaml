@@ -49,7 +49,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/th1.jpg
     - assets/th.jpg
-    
 
   

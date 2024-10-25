@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gtodo/home.dart';
-import 'package:gtodo/signup.dart';
+import 'package:gtodo/login.dart'; // Ensure this path is correct based on your project structure
 
-class LoginPage extends StatelessWidget {
+class SignUpPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  void _login(BuildContext context) async {
+  void _signUp(BuildContext context) async {
     String email = emailController.text;
+    String username = usernameController.text;
     String password = passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty || username.isEmpty || password.isEmpty) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text("Error"),
-          content: Text("Please enter both email and password."),
+          content: Text("Please enter all fields."),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -29,15 +30,16 @@ class LoginPage extends StatelessWidget {
     }
 
     try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
+      // Optionally, you can save the username to Firestore or your backend here.
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(builder: (context) => LoginPage()),
       );
     } catch (e) {
       String errorMessage;
@@ -47,15 +49,11 @@ class LoginPage extends StatelessWidget {
           case 'invalid-email':
             errorMessage = 'The email address is badly formatted.';
             break;
-          case 'user-disabled':
-            errorMessage =
-                'The user corresponding to the given email has been disabled.';
+          case 'weak-password':
+            errorMessage = 'The password is too weak.';
             break;
-          case 'user-not-found':
-            errorMessage = 'No user found for that email.';
-            break;
-          case 'wrong-password':
-            errorMessage = 'Wrong password provided for that user.';
+          case 'email-already-in-use':
+            errorMessage = 'The email is already in use.';
             break;
           default:
             errorMessage = 'An unknown error occurred.';
@@ -67,7 +65,7 @@ class LoginPage extends StatelessWidget {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text("Login Failed"),
+          title: Text("Sign Up Failed"),
           content: Text(errorMessage),
           actions: [
             TextButton(
@@ -77,7 +75,7 @@ class LoginPage extends StatelessWidget {
           ],
         ),
       );
-      print('Login error: $e');
+      print('Sign up error: $e');
     }
   }
 
@@ -91,10 +89,15 @@ class LoginPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              // Circular avatar for profile image
               CircleAvatar(
                 radius: 50,
-                backgroundImage: AssetImage(
-                    'assets/th.jpg'), // Replace with the correct asset path
+                backgroundImage: AssetImage('assets/th1.jpg'), 
+              ),
+              SizedBox(height: 20.0),
+              Text(
+                'Create Account',
+                style: TextStyle(fontSize: 24, color: Colors.white),
               ),
               SizedBox(height: 20.0),
               TextField(
@@ -105,10 +108,21 @@ class LoginPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30.0), // Rounded edges
                   ),
                   filled: true,
-                  fillColor: const Color.fromRGBO(248, 248, 249, 1)
-                      .withOpacity(0.3), // Adjust transparency
+                  fillColor: const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.3), // Adjust transparency
                 ),
                 keyboardType: TextInputType.emailAddress,
+              ),
+              SizedBox(height: 16.0),
+              TextField(
+                controller: usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Username',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0), // Rounded edges
+                  ),
+                  filled: true,
+                  fillColor: const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.3), // Adjust transparency
+                ),
               ),
               SizedBox(height: 16.0),
               TextField(
@@ -119,30 +133,28 @@ class LoginPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30.0), // Rounded edges
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFFDFDFD)
-                      .withOpacity(0.3), // Adjust transparency
+                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.3), // Adjust transparency
                 ),
                 obscureText: true,
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
-                onPressed: () => _login(context),
-                child: Text('Login'),
+                onPressed: () => _signUp(context),
+                child: Text('Sign Up'),
                 style: ElevatedButton.styleFrom(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
+                  padding: EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
                 ),
               ),
               SizedBox(height: 16.0),
               TextButton(
                 onPressed: () {
-                  Navigator.push(
+                  Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => SignUpPage()),
+                    MaterialPageRoute(builder: (context) => LoginPage()),
                   );
                 },
                 child: Text(
-                  'Don\'t have an account? Sign up',
+                  'Already have an account? Login',
                   style: TextStyle(color: Colors.blueAccent),
                 ),
               ),
