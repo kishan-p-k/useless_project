@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gtodo/login.dart'; // Import LoginPage
+import 'package:gtodo/profile.dart'; // Import ProfilePage
 import 'package:gtodo/task.dart';
 
 class HomePage extends StatelessWidget {
@@ -11,13 +13,26 @@ class HomePage extends StatelessWidget {
           PopupMenuButton<String>(
             icon: Icon(Icons.person),
             onSelected: (value) {
-              if (value == 'logout') {
-                Navigator.pushReplacementNamed(
-                    context, '/login'); // Navigate to Login
+              if (value == 'profile') {
+                // Navigate to Profile Page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfilePage()),
+                );
+              } else if (value == 'logout') {
+                // Navigate to Login Page
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                );
               }
             },
             itemBuilder: (BuildContext context) {
               return [
+                PopupMenuItem<String>(
+                  value: 'profile',
+                  child: Text('Profile'),
+                ),
                 PopupMenuItem<String>(
                   value: 'logout',
                   child: Text('Logout'),
@@ -57,8 +72,7 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) => TaskPage()), // Navigate to TaskPage
+                  MaterialPageRoute(builder: (context) => TaskPage()),
                 );
               },
               child: Text('Go to Tasks'),
