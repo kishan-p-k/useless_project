@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
-import 'package:gtodo/login.dart'; // Import the login page for navigation
-import 'package:gtodo/profile.dart'; // Import the profile page for navigation
+import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore
+import 'package:gtodo/login.dart'; // Import LoginPage
+import 'package:gtodo/profile.dart'; // Import ProfilePage
 
 class HomePage extends StatelessWidget {
-  final List<String> tasks = []; // Sample list of tasks
   final TextEditingController _taskController =
-      TextEditingController(); // Controller for the TextField
+      TextEditingController(); // Controller for task input
   final FirebaseFirestore _firestore =
       FirebaseFirestore.instance; // Firestore instance
 
@@ -14,19 +13,17 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // title: Text('To-Do List'),
+        title: Text('User Profile'),
         actions: [
           PopupMenuButton<String>(
             icon: Icon(Icons.person),
             onSelected: (value) {
               if (value == 'profile') {
-                // Navigate to Profile Page
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ProfilePage()),
                 );
               } else if (value == 'logout') {
-                // Handle logout logic here
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),
@@ -52,27 +49,69 @@ class HomePage extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Avatar and user info
+            Center(
+              child: CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.blue,
+                child: Text(
+                  'A',
+                  style: TextStyle(fontSize: 40, color: Colors.white),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Level: 5',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Equipment: Sword, Shield, Armor',
+              style: TextStyle(fontSize: 18),
+            ),
+            SizedBox(height: 20),
+
+            // List of tasks fetched from Firestore
             Expanded(
-              child: ListView.builder(
-                itemCount: tasks.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: ListTile(
-                      title: Text(tasks[index]),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          // Handle delete task
-                          tasks.removeAt(index);
-                          // Note: You would typically use setState or state management here to refresh the UI
-                        },
-                      ),
-                    ),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _firestore.collection('tasks').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(child: Text('No tasks available.'));
+                  }
+
+                  final tasks = snapshot.data!.docs;
+
+                  return ListView.builder(
+                    itemCount: tasks.length,
+                    itemBuilder: (context, index) {
+                      var task = tasks[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: ListTile(
+                          title: Text(task['description']),
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () async {
+                              await _firestore
+                                  .collection('tasks')
+                                  .doc(task.id)
+                                  .delete();
+                            },
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
             ),
+
+            // Input field to add new tasks
             TextField(
               controller: _taskController,
               decoration: InputDecoration(
@@ -81,24 +120,18 @@ class HomePage extends StatelessWidget {
               ),
             ),
             SizedBox(height: 10),
+
+            // Button to add tasks to Firestore
             ElevatedButton(
               onPressed: () async {
                 final taskDescription = _taskController.text;
                 if (taskDescription.isNotEmpty) {
-                  // Generate a unique ID (you can use the document ID from Firestore)
-                  String taskId = _firestore.collection('tasks').doc().id;
-
-                  // Add task to Firestore
-                  await _firestore.collection('tasks').doc(taskId).set({
-                    'createdAt': FieldValue
-                        .serverTimestamp(), // Automatically sets the timestamp
+                  await _firestore.collection('tasks').add({
                     'description': taskDescription,
-                    'id': taskId,
+                    'createdAt': FieldValue.serverTimestamp(),
                     'isDone': false,
                   });
-
-                  // Clear the TextField
-                  _taskController.clear();
+                  _taskController.clear(); // Clear input after adding task
                 }
               },
               child: Text('Add Task'),
