@@ -14,7 +14,6 @@ class _TaskPageState extends State<TaskPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   int _priority = 1; // Default priority
 
-  // Generate a random string of specified length
   String _generateRandomString(int length) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     final random = Random();
@@ -26,7 +25,6 @@ class _TaskPageState extends State<TaskPage> {
     );
   }
 
-  // Generate a unique task ID
   String _generateTaskId() {
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     final randomString = _generateRandomString(6);
@@ -39,12 +37,14 @@ class _TaskPageState extends State<TaskPage> {
     super.dispose();
   }
 
-  // Function to add a task with auto-generated ID
   Future<void> _addTask(String task) async {
     if (task.isNotEmpty) {
       try {
         final String taskId = _generateTaskId();
+        final String userEmail = _auth.currentUser!.email!; // Get user email
+
         await _firestore.collection('tasks').add({
+          'email': userEmail, // Use 'email' instead of 'userEmail'
           'taskId': taskId,
           'description': task,
           'priority': _priority,
@@ -56,7 +56,7 @@ class _TaskPageState extends State<TaskPage> {
         });
         taskController.clear();
         setState(() {
-          _priority = 1; // Reset priority to 1 after adding task
+          _priority = 1;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Task added successfully!')),
@@ -69,26 +69,61 @@ class _TaskPageState extends State<TaskPage> {
     }
   }
 
-  // Function to clear completed and skipped tasks
+  Future<void> _completeTask(String docId) async {
+    try {
+      await _firestore.collection('tasks').doc(docId).update({
+        'isDone': true,
+        'completed': true,
+        'completedAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Task marked as complete!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error completing task: $e')),
+      );
+    }
+  }
+
+  Future<void> _skipTask(String docId) async {
+    try {
+      await _firestore.collection('tasks').doc(docId).update({
+        'isSkipped': true,
+        'skipped': true,
+        'skippedAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Task skipped!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error skipping task: $e')),
+      );
+    }
+  }
+
   Future<void> _clearCompletedTasks() async {
     try {
-      // Get all completed and skipped tasks
+      final String userEmail = _auth.currentUser!.email!; // Get user email
       QuerySnapshot completedTasks = await _firestore
           .collection('tasks')
           .where('isDone', isEqualTo: true)
+          .where('email', isEqualTo: userEmail) // Use 'email' instead of 'userEmail'
           .get();
 
       QuerySnapshot skippedTasks = await _firestore
           .collection('tasks')
           .where('isSkipped', isEqualTo: true)
+          .where('email', isEqualTo: userEmail) // Use 'email' instead of 'userEmail'
           .get();
 
-      // Combine both lists of documents
       List<DocumentSnapshot> allTasksToDelete = []
         ..addAll(completedTasks.docs)
         ..addAll(skippedTasks.docs);
 
-      // Delete each document
       for (var doc in allTasksToDelete) {
         await _firestore.collection('tasks').doc(doc.id).delete();
       }
@@ -103,128 +138,12 @@ class _TaskPageState extends State<TaskPage> {
     }
   }
 
-  // First confirmation dialog for completing tasks
-  Future<bool> _showFirstConfirmation(String message) async {
-    return await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text(message),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('No'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: Text('Yes'),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
-  }
-
-  // Second confirmation dialog for final confirmation
-  Future<bool> _showSecondConfirmation() async {
-    return await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Final Confirmation'),
-              content: Text(
-                  'Are you absolutely sure? This action cannot be undone.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('No'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: Text('Yes, Complete It'),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
-  }
-
-  // Complete task function with double confirmation
-  Future<void> _completeTask(
-      String documentId, String taskId, int priority) async {
-    bool firstConfirm = await _showFirstConfirmation('Complete Task');
-    if (firstConfirm) {
-      bool secondConfirm = await _showSecondConfirmation();
-      if (secondConfirm) {
-        try {
-          // Mark the task as done
-          await _firestore.collection('tasks').doc(documentId).update({
-            'isDone': true,
-            'completed': true,
-            'skipped': false,
-          });
-
-          // Update user points based on priority
-          String userId = _auth.currentUser!.uid; // Get current user's ID
-          int pointsToAdd = priority * 10; // Assign points based on priority
-          await _firestore.collection('users').doc(userId).update({
-            'points': FieldValue.increment(pointsToAdd),
-            'completed': FieldValue.increment(1),
-          });
-
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'Task completed successfully! $pointsToAdd points added!')),
-          );
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error completing task: $e')),
-          );
-        }
-      }
-    }
-  }
-
-  // Skip task function with penalty
-  Future<void> _skipTask(String documentId, int priority) async {
-    int pointsToDeduct = priority * 5; // Calculate points deduction
-
-    bool confirm = await _showFirstConfirmation(
-        'Are you sure you want to skip this task? This will deduct $pointsToDeduct points from your total.');
-    if (confirm) {
-      try {
-        // Mark the task as skipped
-        await _firestore.collection('tasks').doc(documentId).update({
-          'isSkipped': true,
-          'skipped': true,
-          'completed': false,
-        });
-
-        // Deduct points from the user
-        String userId = _auth.currentUser!.uid; // Get current user's ID
-        await _firestore.collection('users').doc(userId).update({
-          'points': FieldValue.increment(-pointsToDeduct),
-          'skipped': FieldValue.increment(1),
-        });
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Task skipped successfully!')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error skipping task: $e')),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final String currentUserEmail = _auth.currentUser?.email ?? 'Unknown';
+
+    
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Task Manager'),
@@ -234,8 +153,14 @@ class _TaskPageState extends State<TaskPage> {
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Priority Slider
-            Text('Priority: $_priority'),
+            Text(
+              'Priority: $_priority',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
             Slider(
               value: _priority.toDouble(),
               min: 1,
@@ -247,87 +172,152 @@ class _TaskPageState extends State<TaskPage> {
                   _priority = value.toInt();
                 });
               },
+              activeColor: Colors.blue,
+              inactiveColor: Colors.blue.withOpacity(0.3),
             ),
-            SizedBox(height: 20), // Spacer
-            // Task List
+            SizedBox(height: 20),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _firestore
                     .collection('tasks')
-                    .orderBy('priority', descending: true)
-                    .orderBy('createdAt', descending: true)
+                     .where('email', isEqualTo: currentUserEmail) // Use 'email' instead of 'userEmail'
+                    // .orderBy('priority', descending: true)
+                    //  .orderBy('createdAt', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) return CircularProgressIndicator();
+                  if (!snapshot.hasData) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  // Handle errors
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
 
                   final tasks = snapshot.data!.docs;
+
+                  if (tasks.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No tasks yet. Add some!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    );
+                  }
+
                   return ListView.builder(
                     itemCount: tasks.length,
                     itemBuilder: (context, index) {
                       final task = tasks[index];
-
-                      return ListTile(
-                        title: Text(
-                          task['description'],
-                          style: TextStyle(
-                            color: task['isDone'] ? Colors.white : (task['isSkipped'] ? Colors.red : Colors.white),
-                            decoration: task['isDone'] ? TextDecoration.lineThrough : TextDecoration.none,
+                      return Card(
+                        elevation: 3,
+                        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                        color: Colors.blue.withOpacity(0.2),
+                        child: ListTile(
+                          title: Text(
+                            task['description'],
+                            style: TextStyle(
+                              color: task['isDone']
+                                  ? Colors.grey
+                                  : (task['isSkipped'] ? Colors.red : Colors.white),
+                              decoration: task['isDone']
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              fontSize: 16,
+                            ),
                           ),
-                        ),
-                        subtitle: Text(
-                          'Priority: ${task['priority']}',
-                          style: TextStyle(
-                            color: task['isDone'] ? Colors.white : (task['isSkipped'] ? Colors.red : Colors.white),
-                            decoration: task['isDone'] ? TextDecoration.lineThrough : TextDecoration.none,
+                          subtitle: Text(
+                            'Priority: ${task['priority']}',
+                            style: TextStyle(
+                              color: task['isDone']
+                                  ? Colors.grey
+                                  : Colors.white.withOpacity(0.7),
+                            ),
                           ),
-                        ),
-                        trailing: task['isDone'] 
-                            ? null // Remove trailing buttons if the task is done
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (!task['isSkipped']) ...[
+                          trailing: task['isDone']
+                              ? null
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (!task['isSkipped']) ...[
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.check_circle_outline,
+                                          color: Colors.green,
+                                        ),
+                                        onPressed: () {
+                                          _completeTask(task.id);
+                                        },
+                                      ),
+                                    ],
                                     IconButton(
-                                      icon: Icon(Icons.check),
+                                      icon: Icon(
+                                        Icons.skip_next,
+                                        color: Colors.orange,
+                                      ),
                                       onPressed: () {
-                                        _completeTask(task.id, task['taskId'], task['priority']);
+                                        _skipTask(task.id);
                                       },
                                     ),
                                   ],
-                                  IconButton(
-                                    icon: Icon(Icons.skip_next),
-                                    onPressed: () {
-                                      _skipTask(task.id, task['priority']);
-                                    },
-                                  ),
-                                ],
-                              ),
+                                ),
+                        ),
                       );
                     },
                   );
                 },
               ),
             ),
-            SizedBox(height: 20), // Spacer
-            // Add Task Field
+            SizedBox(height: 20),
             TextField(
               controller: taskController,
               decoration: InputDecoration(
                 labelText: 'Enter Task',
+                labelStyle: TextStyle(color: Colors.white),
                 border: OutlineInputBorder(),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
               ),
+              style: TextStyle(color: Colors.white),
             ),
-            SizedBox(height: 10), // Spacer
-            ElevatedButton(
-              onPressed: () {
-                _addTask(taskController.text);
-              },
-              child: Text('Add Task'),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _addTask(taskController.text);
+                    },
+                    child: Text('Add Task'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 10), // Spacer
-            ElevatedButton(
-              onPressed: _clearCompletedTasks,
-              child: Text('Clear Completed & Skipped Tasks'),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _clearCompletedTasks,
+                    child: Text('Clear Completed & Skipped Tasks'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

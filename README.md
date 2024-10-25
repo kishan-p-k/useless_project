@@ -1,31 +1,31 @@
 <img width="1280" alt="readme-banner" src="https://github.com/user-attachments/assets/35332e92-44cb-425b-9dff-27bcf1023c6c">
 
 # [Project Name] 🎯
-
+Gamified TODO
 
 ## Basic Details
-### Team Name: [Name]
+### Team Name: [Team Izanagi]
 
 
 ### Team Members
-- Team Lead: [Name] - [College]
-- Member 2: [Name] - [College]
-- Member 3: [Name] - [College]
+- Team Lead: [Ajay Suseel] - [TKM COLLEGE OF ENGINEERING KOLLAM]
+- Member 2: [Abhiram K Aravind] - [TKM COLLEGE OF ENGINEERING KOLLAM]
+- Member 3: [Kishan P K] - [TKM COLLEGE OF ENGINEERING KOLLAM]
 
 ### Project Description
-[2-3 lines about what your project does]
+A gamified TODO list that allows users to add tasks ,monitor and complete them, earn points and use those points to level up your pet pokemon.
 
 ### The Problem (that doesn't exist)
-[What ridiculous problem are you solving?]
+People find it difficult to keep track of day to day tasks.
 
 ### The Solution (that nobody asked for)
-[How are you solving it? Keep it fun!]
+A gamified version of TODO list that allows users to not only add tasks but also complete it purely by marking it completed(no proof required)
 
 ## Technical Details
 ### Technologies/Components Used
 For Software:
-- [Languages used]
-- [Frameworks used]
+- Dart
+- Firebase
 - [Libraries used]
 - [Tools used]
 
@@ -37,10 +37,14 @@ For Hardware:
 ### Implementation
 For Software:
 # Installation
-[commands]
+git clone https://github.com/ajaysuseel/GTODO.git
+cd GTODO
+flutter pub get
+npm install -g firebase-tools
+flutterfire configure
 
 # Run
-[commands]
+flutter run
 
 ### Project Documentation
 For Software:
