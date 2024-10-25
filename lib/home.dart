@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'package:gtodo/login.dart'; // Import LoginPage
 import 'package:gtodo/profile.dart'; // Import ProfilePage
 import 'package:gtodo/task.dart';
@@ -23,6 +24,7 @@ class HomePage extends StatelessWidget {
                 // Navigate to Login Page
                 Navigator.pushReplacement(
                   context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
                   MaterialPageRoute(builder: (context) => LoginPage()),
                 );
               }
