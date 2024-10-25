@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:gtodo/home.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
+import 'package:gtodo/home.dart'; // Adjust based on your project structure
 
 class LoginPage extends StatelessWidget {
-  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  void _login(BuildContext context) {
-    String phone = phoneController.text;
+  void _login(BuildContext context) async {
+    String email = emailController.text;
     String password = passwordController.text;
 
-    if (phone.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
+      // Show an error if inputs are invalid
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -26,17 +28,48 @@ class LoginPage extends StatelessWidget {
       return;
     }
 
-    if (phone == '123' && password == '123') {
+    try {
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Navigate to HomePage upon successful login
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
       );
-    } else {
+    } catch (e) {
+      String errorMessage;
+
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'invalid-email':
+            errorMessage = 'The email address is badly formatted.';
+            break;
+          case 'user-disabled':
+            errorMessage =
+                'The user corresponding to the given email has been disabled.';
+            break;
+          case 'user-not-found':
+            errorMessage = 'No user found for that email.';
+            break;
+          case 'wrong-password':
+            errorMessage = 'Wrong password provided for that user.';
+            break;
+          default:
+            errorMessage = 'An unknown error occurred.';
+        }
+      } else {
+        errorMessage = 'An error occurred. Please try again.';
+      }
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text("Login Failed"),
-          content: Text("Invalid phone number or password."),
+          content: Text(errorMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -45,53 +78,40 @@ class LoginPage extends StatelessWidget {
           ],
         ),
       );
+      print('Login error: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900],
+      backgroundColor: Colors.grey[900], // Solid dark background
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              // Circular avatar for user image
-              CircleAvatar(
-                radius: 50, // Adjust size as needed
-                backgroundImage: AssetImage('assets/th.jpg'), // Use asset image
-              ),
-              SizedBox(height: 20.0),
               TextField(
-                controller: phoneController,
-                style: TextStyle(color: Colors.white),
+                controller: emailController,
                 decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0), // Rounded corners
-                  ),
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.2),
+                  fillColor:
+                      const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.8),
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16.0),
               TextField(
                 controller: passwordController,
-                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0), // Rounded corners
-                  ),
+                  border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.2),
+                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.8),
                 ),
-                obscureText: true,
                 obscureText: true,
               ),
               SizedBox(height: 16.0),
@@ -99,7 +119,8 @@ class LoginPage extends StatelessWidget {
                 onPressed: () => _login(context),
                 child: Text('Login'),
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
                 ),
               ),
               SizedBox(height: 16.0),
@@ -107,6 +128,7 @@ class LoginPage extends StatelessWidget {
                 onPressed: () {
                   // Navigate to signup page
                   print('Navigate to signup page');
+                  // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => SignupPage()));
                 },
                 child: Text(
                   'Don\'t have an account? Sign up',
