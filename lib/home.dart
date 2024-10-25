@@ -25,7 +25,6 @@ class HomePage extends StatelessWidget {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),
-                  MaterialPageRoute(builder: (context) => LoginPage()),
                 );
               }
             },
