@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // Import Firebase core
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gtodo/home.dart';
 import 'package:gtodo/login.dart';
-import 'package:gtodo/profile.dart'; // Import the profile page.
-import 'firebase_options.dart'; // Import the generated file with Firebase options.
+import 'package:gtodo/profile.dart';
+import 'firebase_options.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter is initialized
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); // Initialize Firebase with options
-  runApp(const MyApp()); // Run the app
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -17,14 +20,45 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // Disable debug banner.
+      debugShowCheckedModeBanner: false,
       title: 'Gamified To-Do List',
-      theme: ThemeData.dark(), // Use dark theme for consistency.
-      initialRoute: '/', // Define the initial route.
+      theme: ThemeData.dark().copyWith(
+        primaryColor: Colors.blueAccent,
+        scaffoldBackgroundColor: Colors.grey[900],
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.blueAccent,
+          elevation: 0,
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.blueAccent,
+        ),
+      ),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasData) {
+            return HomePage();
+          }
+          
+          return LoginPage();
+        },
+      ),
       routes: {
-        '/': (context) => LoginPage(), // LoginPage as the initial screen.
+        '/login': (context) => LoginPage(),
+        '/home': (context) => HomePage(),
         '/profile': (context) => ProfilePage(),
-        '/home': (context) => HomePage(), // Route to HomePage
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/home') {
+          return MaterialPageRoute(
+            builder: (context) => HomePage(),
+          );
+        }
+        return null;
       },
     );
   }
