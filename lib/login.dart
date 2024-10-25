@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gtodo/profile.dart'; // Import the profile page for navigation
+import 'package:gtodo/home.dart';
 
 class LoginPage extends StatelessWidget {
   final TextEditingController phoneController = TextEditingController();
@@ -33,7 +33,7 @@ class LoginPage extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (context) => ProfilePage()), // Navigate to ProfilePage
+            builder: (context) => HomePage()), // Navigate to ProfilePage
       );
     } else {
       // Show an error for invalid credentials

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gtodo/home.dart';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -6,6 +7,16 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[900], // Dark background for gamified theme
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => HomePage()), // Navigate to ProfilePage
+            );
+          },
+        ),
         backgroundColor: Colors.blueAccent,
         title: Text('Profile'),
         centerTitle: true,
