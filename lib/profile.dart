@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gtodo/home.dart';
+import 'package:gtodo/login.dart';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -32,6 +33,17 @@ class ProfilePage extends StatelessWidget {
             _buildRecentActivities(),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => LoginPage()), // Navigate to LoginPage
+          );
+        },
+        backgroundColor: Colors.redAccent,
+        child: Icon(Icons.logout), // Logout icon
       ),
     );
   }
