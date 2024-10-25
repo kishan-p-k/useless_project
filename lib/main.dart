@@ -24,7 +24,17 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => LoginPage(), // LoginPage as the initial screen.
         '/profile': (context) => ProfilePage(),
-        '/home': (context) => HomePage(), // Route to HomePage
+        // Route to HomePage that can accept parameters
+        '/home': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+          return HomePage(
+            username: args['username'] ?? 'Guest', // Default to 'Guest'
+            points: args['points'] ?? 0,
+            completed: args['completed'] ?? 0,
+            skipped: args['skipped'] ?? 0,
+            missed: args['missed'] ?? 0,
+          );
+        },
       },
     );
   }

@@ -1,76 +1,74 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore
-import 'package:gtodo/login.dart'; // Import LoginPage
-import 'package:gtodo/profile.dart'; // Import ProfilePage
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatelessWidget {
-  final TextEditingController _taskController =
-      TextEditingController(); // Controller for task input
-  final FirebaseFirestore _firestore =
-      FirebaseFirestore.instance; // Firestore instance
+  final String username; // To hold the username
+  final int points; // To hold user points
+  final int completed; // To hold completed tasks count
+  final int skipped; // To hold skipped tasks count
+  final int missed; // To hold missed tasks count
+
+  HomePage({
+    required this.username,
+    required this.points,
+    required this.completed,
+    required this.skipped,
+    required this.missed,
+  });
+
+  final TextEditingController _taskController = TextEditingController(); // Controller for task input
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
+  final FirebaseAuth _auth = FirebaseAuth.instance; // FirebaseAuth instance to get the user ID
 
   @override
   Widget build(BuildContext context) {
+    // Check if user is logged in
+    if (_auth.currentUser == null) {
+      return Scaffold(
+        body: Center(child: Text('Please log in.')),
+      );
+    }
+
+    String userId = _auth.currentUser!.uid; // Safely get user ID
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('User Profile'),
+        title: Text('User Profile - $username'), // Displaying the username in the app bar
         actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.person),
-            onSelected: (value) {
-              if (value == 'profile') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfilePage()),
-                );
-              } else if (value == 'logout') {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginPage()),
-                );
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem<String>(
-                  value: 'profile',
-                  child: Text('Profile'),
-                ),
-                PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Text('Logout'),
-                ),
-              ];
-            },
-          ),
+          // Other actions...
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Avatar and user info
+            // Display user information
             Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.blue,
-                child: Text(
-                  'A',
-                  style: TextStyle(fontSize: 40, color: Colors.white),
-                ),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.blue,
+                    child: Text(
+                      username[0].toUpperCase(), // Display first letter of the username
+                      style: TextStyle(fontSize: 40, color: Colors.white),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Points: $points',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Completed: $completed | Skipped: $skipped | Missed: $missed',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  SizedBox(height: 20),
+                ],
               ),
             ),
-            SizedBox(height: 20),
-            Text(
-              'Level: 5',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Equipment: Sword, Shield, Armor',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 20),
 
             // List of tasks fetched from Firestore
             Expanded(
@@ -130,6 +128,7 @@ class HomePage extends StatelessWidget {
                     'description': taskDescription,
                     'createdAt': FieldValue.serverTimestamp(),
                     'isDone': false,
+                    'userId': userId, // Add user ID to the task
                   });
                   _taskController.clear(); // Clear input after adding task
                 }
@@ -142,3 +141,4 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+

@@ -31,6 +31,8 @@ class ProfilePage extends StatelessWidget {
             _buildTaskSummary(),
             const SizedBox(height: 20),
             _buildRecentActivities(),
+            const SizedBox(height: 20),
+            _buildSettingsButton(context), // New settings button
           ],
         ),
       ),
@@ -38,8 +40,7 @@ class ProfilePage extends StatelessWidget {
         onPressed: () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-                builder: (context) => LoginPage()), // Navigate to LoginPage
+            MaterialPageRoute(builder: (context) => LoginPage()), // Navigate to LoginPage
           );
         },
         backgroundColor: Colors.redAccent,
@@ -65,17 +66,17 @@ class ProfilePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'John Doe',
+              'John Doe', // Placeholder for the user's name
               style: TextStyle(fontSize: 24, color: Colors.white),
             ),
             const SizedBox(height: 8),
             Text(
-              'Points: 1200',
+              'Points: 1200', // Placeholder for user points
               style: TextStyle(fontSize: 16, color: Colors.amber),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {}, // Functionality for upgrading avatar
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
                 shape: RoundedRectangleBorder(
@@ -150,6 +151,24 @@ class ProfilePage extends StatelessWidget {
       subtitle: Text(
         date,
         style: TextStyle(color: Colors.white70),
+      ),
+    );
+  }
+
+  Widget _buildSettingsButton(BuildContext context) {
+    return Center(
+      child: ElevatedButton(
+        onPressed: () {
+          // Navigate to the settings page (to be implemented)
+          // Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsPage()));
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orangeAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text('Settings'), // Placeholder for settings button
       ),
     );
   }

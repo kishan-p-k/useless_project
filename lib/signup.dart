@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gtodo/login.dart'; // Ensure this path is correct based on your project structure
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gtodo/login.dart';
 
 class SignUpPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
@@ -8,11 +9,12 @@ class SignUpPage extends StatelessWidget {
   final TextEditingController passwordController = TextEditingController();
 
   void _signUp(BuildContext context) async {
-    String email = emailController.text;
-    String username = usernameController.text;
-    String password = passwordController.text;
+    String email = emailController.text.trim();
+    String username = usernameController.text.trim();
+    String password = passwordController.text.trim();
 
     if (email.isEmpty || username.isEmpty || password.isEmpty) {
+      // Show error if any fields are empty
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -30,13 +32,24 @@ class SignUpPage extends StatelessWidget {
     }
 
     try {
+      // Step 1: Create user with Firebase Authentication
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Optionally, you can save the username to Firestore or your backend here.
+      // Step 2: Save additional user information in Firestore
+      String userId = userCredential.user!.uid;
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'username': username,
+        'email': email,
+        'points': 0,
+        'completed': 0,
+        'skipped': 0,
+        'missed': 0,
+      });
 
+      // Navigate to Login Page after successful sign-up
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => LoginPage()),
@@ -53,15 +66,16 @@ class SignUpPage extends StatelessWidget {
             errorMessage = 'The password is too weak.';
             break;
           case 'email-already-in-use':
-            errorMessage = 'The email is already in use.';
+            errorMessage = 'The email is already in use by another account.';
             break;
           default:
-            errorMessage = 'An unknown error occurred.';
+            errorMessage = 'An unknown error occurred. Please try again.';
         }
       } else {
         errorMessage = 'An error occurred. Please try again.';
       }
 
+      // Show error message
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -89,10 +103,9 @@ class SignUpPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              // Circular avatar for profile image
               CircleAvatar(
                 radius: 50,
-                backgroundImage: AssetImage('assets/th1.jpg'), 
+                backgroundImage: AssetImage('assets/th1.jpg'),
               ),
               SizedBox(height: 20.0),
               Text(
@@ -105,10 +118,10 @@ class SignUpPage extends StatelessWidget {
                 decoration: InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0), // Rounded edges
+                    borderRadius: BorderRadius.circular(30.0),
                   ),
                   filled: true,
-                  fillColor: const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.3), // Adjust transparency
+                  fillColor: const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.3),
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -118,10 +131,10 @@ class SignUpPage extends StatelessWidget {
                 decoration: InputDecoration(
                   labelText: 'Username',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0), // Rounded edges
+                    borderRadius: BorderRadius.circular(30.0),
                   ),
                   filled: true,
-                  fillColor: const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.3), // Adjust transparency
+                  fillColor: const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.3),
                 ),
               ),
               SizedBox(height: 16.0),
@@ -130,10 +143,10 @@ class SignUpPage extends StatelessWidget {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0), // Rounded edges
+                    borderRadius: BorderRadius.circular(30.0),
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.3), // Adjust transparency
+                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.3),
                 ),
                 obscureText: true,
               ),
