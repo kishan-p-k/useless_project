@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gtodo/profile.dart';
+import 'package:gtodo/profile.dart'; // Import the profile page.
+import 'login.dart'; // Import the login page.
 
 void main() {
   runApp(MyApp());
@@ -13,7 +14,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false, // Disable debug banner.
       title: 'Gamified To-Do List',
       theme: ThemeData.dark(), // Use dark theme for consistency.
-      home: ProfilePage(), // Set ProfilePage as the initial screen.
+      initialRoute: '/', // Define the initial route.
+      routes: {
+        '/': (context) => LoginPage(), // LoginPage as the initial screen.
+        '/profile': (context) => ProfilePage(), // Route to ProfilePage.
+      },
     );
   }
 }
