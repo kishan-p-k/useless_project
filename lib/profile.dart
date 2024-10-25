@@ -10,11 +10,10 @@ class ProfilePage extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => HomePage()), // Navigate to ProfilePage
-            );
+            if (context.mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/home', (Route<dynamic> route) => false);
+            }
           },
         ),
         backgroundColor: Colors.blueAccent,
