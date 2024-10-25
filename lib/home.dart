@@ -9,17 +9,38 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('To-Do List'),
+        // title: Text('To-Do List'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        ProfilePage()), // Navigate back to the login page
-              );
+          PopupMenuButton<String>(
+            icon: Icon(Icons.person),
+            onSelected: (value) {
+              if (value == 'profile') {
+                // Navigate to Profile Page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfilePage()),
+                );
+              } else if (value == 'logout') {
+                // Handle logout logic here
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          LoginPage()), // Navigate back to the login page
+                );
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem<String>(
+                  value: 'profile',
+                  child: Text('Profile'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Text('Logout'),
+                ),
+              ];
             },
           ),
         ],
@@ -69,17 +90,6 @@ class HomePage extends StatelessWidget {
               },
               child: Text('Add Task'),
             ),
-            // SizedBox(height: 20),
-            // ElevatedButton(
-            //   onPressed: () {
-            //     // Navigate to Profile Page
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(builder: (context) => ProfilePage()),
-            //     );
-            //   },
-            //   child: Text('Go to Profile'),
-            // ),
           ],
         ),
       ),
