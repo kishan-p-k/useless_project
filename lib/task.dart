@@ -12,7 +12,118 @@ class _TaskPageState extends State<TaskPage> {
   final TextEditingController taskController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  int _priority = 1; // Default priority
+  int _priority = 1;
+  int _userPoints = 0;
+  int _userLevel = 1;
+
+  // Evolution constants
+  final int firstEvolutionLevel = 20;
+  final int secondEvolutionLevel = 45;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  String getPokemonGif(int level) {
+    if (level > secondEvolutionLevel) {
+      return 'assets/char3.gif';
+    } else if (level >= 45) {
+      return 'assets/char3_1.gif';
+    } else if (level >= 25) {
+      return 'assets/chr2.gif';
+    } else if (level >= firstEvolutionLevel) {
+      return 'assets/char2_2.gif';
+    } else if (level >= 18) {
+      return 'assets/char1_5.gif';
+    } else if (level >= 10) {
+      return 'assets/char1_4.gif';
+    } else if (level >= 5) {
+      return 'assets/char1_3.gif';
+    } else if (level >= 2) {
+      return 'assets/char1_2.gif';
+    } else {
+      return 'assets/char1_1.gif';
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    final userDoc =
+        await _firestore.collection('users').doc(_auth.currentUser?.uid).get();
+
+    if (userDoc.exists) {
+      setState(() {
+        _userPoints = userDoc.data()?['points'] ?? 0;
+        _userLevel = userDoc.data()?['level'] ?? 1;
+      });
+    } else {
+      // Create user document if it doesn't exist
+      await _firestore.collection('users').doc(_auth.currentUser?.uid).set({
+        'points': 0,
+        'level': 1,
+        'email': _auth.currentUser?.email,
+        'username': _auth.currentUser?.displayName ?? 'User',
+      });
+    }
+  }
+
+  Future<void> _updateUserPoints(int pointsToAdd) async {
+    final userRef = _firestore.collection('users').doc(_auth.currentUser?.uid);
+
+    // Update points in Firestore using transaction for accuracy
+    await _firestore.runTransaction((transaction) async {
+      final userDoc = await transaction.get(userRef);
+
+      if (!userDoc.exists) {
+        transaction.set(userRef, {
+          'points': pointsToAdd,
+          'level': 1,
+          'email': _auth.currentUser?.email,
+          'username': _auth.currentUser?.displayName ?? 'User',
+        });
+        setState(() {
+          _userPoints = pointsToAdd;
+        });
+      } else {
+        final currentPoints = userDoc.data()?['points'] ?? 0;
+        final newPoints = currentPoints + pointsToAdd;
+        transaction.update(userRef, {
+          'points': newPoints,
+        });
+        setState(() {
+          _userPoints = newPoints;
+        });
+      }
+    });
+
+    // Check if user can level up
+    await _checkForLevelUp();
+  }
+
+  Future<void> _checkForLevelUp() async {
+    int pointsNeeded = _userLevel * 2;
+
+    if (_userPoints >= pointsNeeded) {
+      // Calculate new level based on points
+      int newLevel = _userLevel + 1;
+
+      await _firestore.collection('users').doc(_auth.currentUser?.uid).update({
+        'level': newLevel,
+      });
+
+      setState(() {
+        _userLevel = newLevel;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Level Up! You are now level $_userLevel'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
 
   String _generateRandomString(int length) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -31,33 +142,27 @@ class _TaskPageState extends State<TaskPage> {
     return 'TASK-$timestamp-$randomString';
   }
 
-  @override
-  void dispose() {
-    taskController.dispose();
-    super.dispose();
-  }
-
   Future<void> _addTask(String task) async {
     if (task.isNotEmpty) {
       try {
         final String taskId = _generateTaskId();
-        final String userEmail = _auth.currentUser!.email!; // Get user email
 
         await _firestore.collection('tasks').add({
-          'email': userEmail, // Use 'email' instead of 'userEmail'
+          'userId': _auth.currentUser?.uid,
+          'email': _auth.currentUser?.email,
           'taskId': taskId,
           'description': task,
           'priority': _priority,
           'createdAt': FieldValue.serverTimestamp(),
           'isDone': false,
           'isSkipped': false,
-          'completed': false,
-          'skipped': false,
         });
+
         taskController.clear();
         setState(() {
           _priority = 1;
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Task added successfully!')),
         );
@@ -69,16 +174,19 @@ class _TaskPageState extends State<TaskPage> {
     }
   }
 
-  Future<void> _completeTask(String docId) async {
+  Future<void> _completeTask(String docId, int priority) async {
     try {
-      await _firestore.collection('tasks').doc(docId).update({
-        'isDone': true,
-        'completed': true,
-        'completedAt': FieldValue.serverTimestamp(),
-      });
+      // Delete the task
+      await _firestore.collection('tasks').doc(docId).delete();
+
+      // Add points equal to priority
+      await _updateUserPoints(priority);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Task marked as complete!')),
+        SnackBar(
+          content: Text('Task completed! Earned $priority points!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,14 +197,9 @@ class _TaskPageState extends State<TaskPage> {
 
   Future<void> _skipTask(String docId) async {
     try {
-      await _firestore.collection('tasks').doc(docId).update({
-        'isSkipped': true,
-        'skipped': true,
-        'skippedAt': FieldValue.serverTimestamp(),
-      });
-
+      await _firestore.collection('tasks').doc(docId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Task skipped!')),
+        SnackBar(content: Text('Task skipped')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -105,93 +208,106 @@ class _TaskPageState extends State<TaskPage> {
     }
   }
 
-  Future<void> _clearCompletedTasks() async {
-    try {
-      final String userEmail = _auth.currentUser!.email!; // Get user email
-      QuerySnapshot completedTasks = await _firestore
-          .collection('tasks')
-          .where('isDone', isEqualTo: true)
-          .where('email',
-              isEqualTo: userEmail) // Use 'email' instead of 'userEmail'
-          .get();
-
-      QuerySnapshot skippedTasks = await _firestore
-          .collection('tasks')
-          .where('isSkipped', isEqualTo: true)
-          .where('email',
-              isEqualTo: userEmail) // Use 'email' instead of 'userEmail'
-          .get();
-
-      List<DocumentSnapshot> allTasksToDelete = []
-        ..addAll(completedTasks.docs)
-        ..addAll(skippedTasks.docs);
-
-      for (var doc in allTasksToDelete) {
-        await _firestore.collection('tasks').doc(doc.id).delete();
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Completed and skipped tasks cleared!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error clearing tasks: $e')),
-      );
-    }
+  int getPointsToNextLevel() {
+    return (_userLevel * 2) - (_userPoints % (_userLevel * 2));
   }
 
   @override
   Widget build(BuildContext context) {
-    final String currentUserEmail = _auth.currentUser?.email ?? 'Unknown';
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Task Manager'),
         backgroundColor: Colors.blue,
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade800,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          getPokemonGif(_userLevel),
+                          height: 24,
+                          width: 24,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Lvl $_userLevel',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.stars, color: Colors.amber),
+                  SizedBox(width: 4),
+                  Text(
+                    '$_userPoints pts',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: Container(
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text(
-              'Priority: $_priority',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            // Points to next level indicator
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Points to next level: ',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    '${getPointsToNextLevel()}',
+                    style: TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Slider(
-              value: _priority.toDouble(),
-              min: 1,
-              max: 10,
-              divisions: 9,
-              label: _priority.toString(),
-              onChanged: (value) {
-                setState(() {
-                  _priority = value.toInt();
-                });
-              },
-              activeColor: Colors.blue,
-              inactiveColor: Colors.blue.withOpacity(0.3),
-            ),
-            SizedBox(height: 20),
+            SizedBox(height: 16),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _firestore
                     .collection('tasks')
-                    .where('email',
-                        isEqualTo:
-                            currentUserEmail) // Use 'email' instead of 'userEmail'
-                    // .orderBy('priority', descending: true)
-                    //  .orderBy('createdAt', descending: true)
+                    .where('userId', isEqualTo: _auth.currentUser?.uid)
+                    .where('isDone', isEqualTo: false)
+                    .where('isSkipped', isEqualTo: false)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return Center(child: CircularProgressIndicator());
                   }
 
-                  // Handle errors
                   if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   }
@@ -214,6 +330,8 @@ class _TaskPageState extends State<TaskPage> {
                     itemCount: tasks.length,
                     itemBuilder: (context, index) {
                       final task = tasks[index];
+                      final priority = task['priority'] as int;
+
                       return Card(
                         elevation: 3,
                         margin:
@@ -223,52 +341,53 @@ class _TaskPageState extends State<TaskPage> {
                           title: Text(
                             task['description'],
                             style: TextStyle(
-                              color: task['isDone']
-                                  ? Colors.grey
-                                  : (task['isSkipped']
-                                      ? Colors.red
-                                      : Colors.white),
-                              decoration: task['isDone']
-                                  ? TextDecoration.lineThrough
-                                  : TextDecoration.none,
+                              color: Colors.white,
                               fontSize: 16,
                             ),
                           ),
-                          subtitle: Text(
-                            'Priority: ${task['priority']}',
-                            style: TextStyle(
-                              color: task['isDone']
-                                  ? Colors.grey
-                                  : Colors.white.withOpacity(0.7),
-                            ),
-                          ),
-                          trailing: task['isDone']
-                              ? null
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (!task['isSkipped']) ...[
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.check_circle_outline,
-                                          color: Colors.green,
-                                        ),
-                                        onPressed: () {
-                                          _completeTask(task.id);
-                                        },
-                                      ),
-                                    ],
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.skip_next,
-                                        color: Colors.orange,
-                                      ),
-                                      onPressed: () {
-                                        _skipTask(task.id);
-                                      },
-                                    ),
-                                  ],
+                          subtitle: Row(
+                            children: [
+                              Text(
+                                'Priority: $priority',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
                                 ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(
+                                Icons.stars,
+                                color: Colors.amber,
+                                size: 16,
+                              ),
+                              Text(
+                                '+$priority pts',
+                                style: TextStyle(
+                                  color: Colors.amber,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  Icons.check_circle_outline,
+                                  color: Colors.green,
+                                ),
+                                onPressed: () =>
+                                    _completeTask(task.id, priority),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.skip_next,
+                                  color: Colors.orange,
+                                ),
+                                onPressed: () => _skipTask(task.id),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -276,53 +395,69 @@ class _TaskPageState extends State<TaskPage> {
                 },
               ),
             ),
-            SizedBox(height: 20),
-            TextField(
-              controller: taskController,
-              decoration: InputDecoration(
-                labelText: 'Enter Task',
-                labelStyle: TextStyle(color: Colors.white),
-                border: OutlineInputBorder(),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue),
-                ),
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              style: TextStyle(color: Colors.white),
-            ),
-            SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _addTask(taskController.text);
-                    },
-                    child: Text('Add Task'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                    ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: taskController,
+                          decoration: InputDecoration(
+                            labelText: 'Enter Task',
+                            labelStyle: TextStyle(color: Colors.white),
+                            border: OutlineInputBorder(),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.blue),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.add_task, color: Colors.blue),
+                              onPressed: () => _addTask(taskController.text),
+                            ),
+                          ),
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _clearCompletedTasks,
-                    child: Text('Clear Completed & Skipped Tasks'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                    ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        'Priority: $_priority',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: _priority.toDouble(),
+                          min: 1,
+                          max: 10,
+                          divisions: 9,
+                          label: _priority.toString(),
+                          onChanged: (value) {
+                            setState(() {
+                              _priority = value.toInt();
+                            });
+                          },
+                          activeColor: Colors.blue,
+                          inactiveColor: Colors.blue.withOpacity(0.3),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
