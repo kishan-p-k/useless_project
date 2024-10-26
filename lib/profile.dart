@@ -1,63 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gtodo/home.dart';
 import 'package:gtodo/login.dart';
 
 class ProfilePage extends StatelessWidget {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[900], // Dark background for gamified theme
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            if (context.mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/home', (Route<dynamic> route) => false);
-            }
-          },
-        ),
-        backgroundColor: Colors.blueAccent,
-        title: Text('Profile'),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildAvatarSection(),
-            const SizedBox(height: 20),
-            _buildTaskSummary(),
-            const SizedBox(height: 20),
-            _buildRecentActivities(),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) => LoginPage()), // Navigate to LoginPage
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _firestore
+          .collection('users')
+          .doc(_auth.currentUser?.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
-        },
-        backgroundColor: Colors.redAccent,
-        child: Icon(Icons.logout), // Logout icon
-      ),
+        }
+
+        Map<String, dynamic> userData =
+            snapshot.data!.data() as Map<String, dynamic>;
+
+        return Scaffold(
+          backgroundColor: Colors.grey[900],
+          appBar: AppBar(
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/home', (Route<dynamic> route) => false);
+              },
+            ),
+            backgroundColor: Colors.blueAccent,
+            title: Text('Profile'),
+            centerTitle: true,
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildAvatarSection(userData, context), // Pass context
+                const SizedBox(height: 20),
+                _buildTaskSummary(userData),
+                const SizedBox(height: 20),
+                _buildRecentActivities(userData),
+                const SizedBox(height: 20),
+                _buildSettingsButton(context),
+              ],
+            ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () async {
+              await _auth.signOut();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()),
+              );
+            },
+            backgroundColor: Colors.redAccent,
+            child: Icon(Icons.logout),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildAvatarSection() {
+  Widget _buildAvatarSection(
+      Map<String, dynamic> userData, BuildContext context) {
     return Row(
       children: [
-        // Solid color circle replacing the avatar image
         Container(
           width: 100,
           height: 100,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.purpleAccent, // Solid color for the avatar
+            color: Colors.purpleAccent,
           ),
         ),
         const SizedBox(width: 16),
@@ -65,17 +87,23 @@ class ProfilePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'John Doe',
+              userData['username'] ?? 'User',
               style: TextStyle(fontSize: 24, color: Colors.white),
             ),
             const SizedBox(height: 8),
             Text(
-              'Points: 1200',
+              'Points: ${userData['points'] ?? 0}',
               style: TextStyle(fontSize: 16, color: Colors.amber),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                // Navigate to home page when the button is pressed
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
                 shape: RoundedRectangleBorder(
@@ -90,13 +118,13 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTaskSummary() {
+  Widget _buildTaskSummary(Map<String, dynamic> userData) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildTaskCard('Completed', 25, Colors.green),
-        _buildTaskCard('Skipped', 5, Colors.yellow),
-        _buildTaskCard('Missed', 3, Colors.red),
+        _buildTaskCard('Completed', userData['completed'] ?? 0, Colors.green),
+        _buildTaskCard('Skipped', userData['skipped'] ?? 0, Colors.yellow),
+        _buildTaskCard('Missed', userData['missed'] ?? 0, Colors.red),
       ],
     );
   }
@@ -123,7 +151,9 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivities() {
+  Widget _buildRecentActivities(Map<String, dynamic> userData) {
+    List<dynamic> activities = userData['recentActivities'] ?? [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -132,9 +162,12 @@ class ProfilePage extends StatelessWidget {
           style: TextStyle(fontSize: 20, color: Colors.white),
         ),
         const SizedBox(height: 10),
-        _buildActivityTile('Completed: Daily Workout', 'Today'),
-        _buildActivityTile('Skipped: Reading Task', 'Yesterday'),
-        _buildActivityTile('Missed: Grocery Shopping', '2 Days Ago'),
+        ...activities
+            .map((activity) => _buildActivityTile(
+                  activity['title'] ?? '',
+                  activity['date'] ?? '',
+                ))
+            .toList(),
       ],
     );
   }
@@ -150,6 +183,21 @@ class ProfilePage extends StatelessWidget {
       subtitle: Text(
         date,
         style: TextStyle(color: Colors.white70),
+      ),
+    );
+  }
+
+  Widget _buildSettingsButton(BuildContext context) {
+    return Center(
+      child: ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orangeAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text('Settings'),
       ),
     );
   }

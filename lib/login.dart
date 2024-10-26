@@ -1,29 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gtodo/home.dart';
+import 'package:gtodo/signup.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool _obscureText = true; // To toggle password visibility
 
   void _login(BuildContext context) async {
     String email = emailController.text;
     String password = passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text("Error"),
-          content: Text("Please enter both email and password."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text("OK"),
-            ),
-          ],
-        ),
-      );
+      _showErrorDialog(context, "Please enter both email and password.");
       return;
     }
 
@@ -34,50 +30,64 @@ class LoginPage extends StatelessWidget {
         password: password,
       );
 
-      Navigator.pushReplacement(
+      // Fetch user data from Firestore
+      String userId = userCredential.user!.uid;
+      DocumentSnapshot userData = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      // Navigate to HomePage with user data
+      Navigator.pushReplacementNamed(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        '/home',
+        arguments: {
+          'username': userData['username'],
+          'points': userData['points'] ?? 0,
+          'completed': userData['completed'] ?? 0,
+          'skipped': userData['skipped'] ?? 0,
+          'missed': userData['missed'] ?? 0,
+        },
       );
     } catch (e) {
-      String errorMessage;
-
-      if (e is FirebaseAuthException) {
-        switch (e.code) {
-          case 'invalid-email':
-            errorMessage = 'The email address is badly formatted.';
-            break;
-          case 'user-disabled':
-            errorMessage =
-                'The user corresponding to the given email has been disabled.';
-            break;
-          case 'user-not-found':
-            errorMessage = 'No user found for that email.';
-            break;
-          case 'wrong-password':
-            errorMessage = 'Wrong password provided for that user.';
-            break;
-          default:
-            errorMessage = 'An unknown error occurred.';
-        }
-      } else {
-        errorMessage = 'An error occurred. Please try again.';
-      }
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text("Login Failed"),
-          content: Text(errorMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text("OK"),
-            ),
-          ],
-        ),
-      );
+      String errorMessage = _handleAuthError(e);
+      _showErrorDialog(context, errorMessage);
       print('Login error: $e');
     }
+  }
+
+  String _handleAuthError(dynamic error) {
+    if (error is FirebaseAuthException) {
+      switch (error.code) {
+        case 'invalid-email':
+          return 'The email address is badly formatted.';
+        case 'user-disabled':
+          return 'The user corresponding to the given email has been disabled.';
+        case 'user-not-found':
+          return 'No user found for that email.';
+        case 'wrong-password':
+          return 'Wrong password provided for that user.';
+        default:
+          return 'An unknown error occurred.';
+      }
+    }
+    return 'An error occurred. Please try again.';
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -92,7 +102,8 @@ class LoginPage extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 50,
-                backgroundImage: AssetImage('assets/th.jpg'), // Replace with the correct asset path
+                backgroundImage:
+                    AssetImage('assets/th.jpg'), // Ensure this asset exists
               ),
               SizedBox(height: 20.0),
               TextField(
@@ -103,7 +114,8 @@ class LoginPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30.0), // Rounded edges
                   ),
                   filled: true,
-                  fillColor: const Color.fromRGBO(248, 248, 249, 1).withOpacity(0.3), // Adjust transparency
+                  fillColor: const Color.fromRGBO(248, 248, 249, 1)
+                      .withOpacity(0.3), // Adjust transparency
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -116,22 +128,39 @@ class LoginPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30.0), // Rounded edges
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFFDFDFD).withOpacity(0.3), // Adjust transparency
+                  fillColor: const Color(0xFFFDFDFD)
+                      .withOpacity(0.3), // Adjust transparency
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText =
+                            !_obscureText; // Toggle password visibility
+                      });
+                    },
+                  ),
                 ),
-                obscureText: true,
+                obscureText: _obscureText,
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
                 onPressed: () => _login(context),
                 child: Text('Login'),
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 50.0, vertical: 15.0),
                 ),
               ),
               SizedBox(height: 16.0),
               TextButton(
                 onPressed: () {
-                  print('Navigate to signup page');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SignUpPage()),
+                  );
                 },
                 child: Text(
                   'Don\'t have an account? Sign up',
